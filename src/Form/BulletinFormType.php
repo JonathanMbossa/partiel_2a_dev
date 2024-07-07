@@ -1,9 +1,7 @@
 <?php
 
-
 namespace App\Form;
 
-use App\Entity\Bulletin;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
@@ -23,11 +21,10 @@ class BulletinFormType extends AbstractType
             ->add('save', SubmitType::class, ['label' => 'Vote']);
     }
 
-    public function configureOptions(OptionsResolver $resolver)
+    public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults([
             'propositions' => [],
         ]);
     }
 }
-

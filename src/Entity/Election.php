@@ -1,37 +1,36 @@
 <?php
 
+
 namespace App\Entity;
 
-use ApiPlatform\Metadata\ApiResource;
-use App\Repository\ElectionRepository;
 use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\DBAL\Types\Types;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity(repositoryClass: ElectionRepository::class)]
-#[ApiResource]
+#[ORM\Entity(repositoryClass: 'App\Repository\ElectionRepository')]
 class Election
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column]
-    #[ORM\OneToMany(targetEntity: Proposition::class, mappedBy: "election")]
-    private ArrayCollection $propositions;
+    #[ORM\Column(type: 'integer')]
+    private ?int $id = null;
+
+    #[ORM\Column(type: 'string', length: 255)]
+    private ?string $sujet = null;
+
+    #[ORM\Column(type: 'datetime')]
+    private \DateTimeInterface $date;
+
+    #[ORM\Column(type: 'integer')]
+    private int $quota;
+
+    #[ORM\OneToMany(targetEntity: 'App\Entity\Proposition', mappedBy: 'election', cascade: ['persist', 'remove'])]
+    private Collection $propositions;
 
     public function __construct()
     {
         $this->propositions = new ArrayCollection();
     }
-    private ?int $id = null;
-
-    #[ORM\Column(length: 100)]
-    private ?string $sujet = null;
-
-    #[ORM\Column(type: Types::DATE_MUTABLE)]
-    private ?\DateTimeInterface $date = null;
-
-    #[ORM\Column]
-    private ?int $quota = null;
 
     public function getId(): ?int
     {
@@ -43,38 +42,61 @@ class Election
         return $this->sujet;
     }
 
-    public function setSujet(string $sujet): static
+    public function setSujet(string $sujet): self
     {
         $this->sujet = $sujet;
 
         return $this;
     }
 
-    public function getDate(): ?\DateTimeInterface
+    public function getDate(): \DateTimeInterface
     {
         return $this->date;
     }
 
-    public function setDate(\DateTimeInterface $date): static
+    public function setDate(\DateTimeInterface $date): self
     {
         $this->date = $date;
 
         return $this;
     }
 
-    public function getQuota(): ?int
+    public function getQuota(): int
     {
         return $this->quota;
     }
 
-    public function setQuota(int $quota): static
+    public function setQuota(int $quota): self
     {
         $this->quota = $quota;
 
         return $this;
     }
 
+    public function getPropositions(): Collection
+    {
+        return $this->propositions;
+    }
 
+    public function addProposition(Proposition $proposition): self
+    {
+        if (!$this->propositions->contains($proposition)) {
+            $this->propositions[] = $proposition;
+            $proposition->setElection($this);
+        }
 
+        return $this;
+    }
 
+    public function removeProposition(Proposition $proposition): self
+    {
+        if ($this->propositions->removeElement($proposition)) {
+            // set the owning side to null (unless already changed)
+            if ($proposition->getElection() === $this) {
+                $proposition->setElection(null);
+            }
+        }
+
+        return $this;
+    }
 }

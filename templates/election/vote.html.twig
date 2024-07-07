@@ -1,0 +1,33 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <h1>{{ election.sujet }}</h1>
+
+    <h2>Propositions</h2>
+    <ul>
+        {% for proposition in election.propositions %}
+            <li>{{ proposition.nom }}</li>
+        {% endfor %}
+    </ul>
+
+    {% if not submitted %}
+        {{ form_start(form) }}
+        <h2>Choix</h2>
+        <ul>
+            {% for proposition in election.propositions %}
+                <li>
+                    <input type="checkbox" name="choices[]" value="{{ proposition.id }}"> {{ proposition.nom }}
+                </li>
+            {% endfor %}
+        </ul>
+        <button type="submit">Vote</button>
+
+    {% else %}
+        <h2>Résultats</h2>
+        <ul>
+            {% for proposition, count in results %}
+                <li>{{ proposition }}: {{ count }} vote(s)</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+{% endblock %}

@@ -57,6 +57,10 @@ class Proposition
     {
     }
 
+    public function getElection()
+    {
+    }
+
 
 }
 

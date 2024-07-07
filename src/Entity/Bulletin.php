@@ -1,5 +1,7 @@
 <?php
 
+// src/Entity/Bulletin.php
+
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
@@ -46,4 +48,3 @@ class Bulletin
         return $this;
     }
 }
-

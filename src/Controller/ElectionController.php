@@ -1,9 +1,12 @@
 <?php
-
+// src/Controller/ElectionController.php
 
 namespace App\Controller;
 
 use App\Entity\Election;
+use App\Entity\Proposition;
+use App\Entity\Bulletin;
+use App\Form\BulletinFormType;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -12,69 +15,53 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class ElectionController extends AbstractController
 {
-    #[Route('/election', name: 'create_election', methods: ['POST'])]
-    public function create(Request $request, EntityManagerInterface $em): Response
+    #[Route('/election', name: 'election_vote')]
+    public function vote(Request $request, EntityManagerInterface $em): Response
     {
-        $data = json_decode($request->getContent(), true);
-
+        // Création d'une élection et des propositions pour l'exemple
         $election = new Election();
-        $election->setSujet($data['sujet']);
-        $election->setDate(new \DateTime($data['date']));
-        $election->setQuota($data['quota']);
+        $election->setSujet('Quelle couleur préférez-vous ?');
+        $election->setDate(new \DateTime());
+        $election->setQuota(3); // Exemple de quota
 
-        $em->persist($election);
-        $em->flush();
-
-        return $this->json($election);
-    }
-
-    #[Route('/election', name: 'get_elections', methods: ['GET'])]
-    public function index(EntityManagerInterface $em): Response
-    {
-        $elections = $em->getRepository(Election::class)->findAll();
-        return $this->json($elections);
-    }
-
-    #[Route('/election/{id}', name: 'get_election', methods: ['GET'])]
-    public function show(int $id, EntityManagerInterface $em): Response
-    {
-        $election = $em->getRepository(Election::class)->find($id);
-        if (!$election) {
-            return $this->json(['message' => 'Election not found'], Response::HTTP_NOT_FOUND);
-        }
-        return $this->json($election);
-    }
-
-    #[Route('/election/{id}', name: 'update_election', methods: ['PUT'])]
-    public function update(int $id, Request $request, EntityManagerInterface $em): Response
-    {
-        $election = $em->getRepository(Election::class)->find($id);
-        if (!$election) {
-            return $this->json(['message' => 'Election not found'], Response::HTTP_NOT_FOUND);
+        $propositionsNoms = ['Bleu', 'Vert', 'Violet', 'Marron', 'Jaune', 'Rose'];
+        foreach ($propositionsNoms as $propositionNom) {
+            $proposition = new Proposition();
+            $proposition->setNom($propositionNom);
+            $proposition->setDetails('');
+            $election->addProposition($proposition);
         }
 
-        $data = json_decode($request->getContent(), true);
-        $election->setSujet($data['sujet']);
-        $election->setDate(new \DateTime($data['date']));
-        $election->setQuota($data['quota']);
+        $form = $this->createForm(BulletinFormType::class, null, options: [
+            'propositions' => array_reduce($election->getPropositions()->toArray(), function ($result, $item) {
+                $result[$item->getNom()] = $item->getId();
+                return $result;
+            }, [])
+        ]);
 
-        $em->flush();
+        $form->handleRequest($request);
+        $results = [];
+        $submitted = false;
 
-        return $this->json($election);
-    }
+        if ($form->isSubmitted() && $form->isValid()) {
+            $submitted = true;
+            $data = $form->getData();
+            $bulletin = new Bulletin();
+            $bulletin->setChoix($data['choix']);
+            $bulletin->setElection($election);
 
-    #[Route('/election/{id}', name: 'delete_election', methods: ['DELETE'])]
-    public function delete(int $id, EntityManagerInterface $em): Response
-    {
-        $election = $em->getRepository(Election::class)->find($id);
-        if (!$election) {
-            return $this->json(['message' => 'Election not found'], Response::HTTP_NOT_FOUND);
+
+            // Compter les votes
+            foreach ($election->getPropositions() as $proposition) {
+                $results[$proposition->getNom()] = in_array($proposition->getId(), $data['choix']) ? 1 : 0;
+            }
         }
 
-        $em->remove($election);
-        $em->flush();
-
-        return $this->json(['message' => 'Election deleted successfully']);
+        return $this->render('election/vote.html.twig', [
+            'election' => $election,
+            'form' => $form->createView(),
+            'submitted' => $submitted,
+            'results' => $results,
+        ]);
     }
 }
-
